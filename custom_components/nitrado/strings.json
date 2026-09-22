@@ -1,0 +1,48 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Nitrado API token",
+        "description": "Create a token under: Nitrado → my account → Developer Portal → Long-life tokens.",
+        "data": {
+          "api_token": "API token"
+        }
+      },
+      "services": {
+        "title": "Select servers",
+        "description": "Choose which of your Nitrado servers should show up in Home Assistant.",
+        "data": {
+          "services": "Servers"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid API token",
+      "cannot_connect": "Could not connect to the Nitrado API"
+    },
+    "abort": {
+      "already_configured": "This Nitrado account is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Visible servers",
+        "description": "Adjust the server selection. Servers you deselect will be removed after saving.",
+        "data": {
+          "services": "Servers"
+        }
+      }
+    },
+    "abort": {
+      "cannot_connect": "Could not connect to the Nitrado API"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {
+        "name": "Status"
+      }
+    }
+  }
+}

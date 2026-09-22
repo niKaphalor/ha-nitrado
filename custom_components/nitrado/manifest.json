@@ -1,0 +1,12 @@
+{
+  "domain": "nitrado",
+  "name": "Nitrado",
+  "codeowners": ["@niKaphalor"],
+  "config_flow": true,
+  "documentation": "https://github.com/niKaphalor/ha-nitrado",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/niKaphalor/ha-nitrado/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
