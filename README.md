@@ -33,12 +33,22 @@ turned into entities.
   response
 - **Memory** – allocated RAM in MB, only added for Minecraft/Hytale where
   that figure is meaningful
+- **Start**, **Stop**, **Restart** buttons – Start and Restart both call
+  Nitrado's restart endpoint (there is no separate start endpoint; restart
+  also brings up a stopped server). Requires the API token to have server
+  control permission, otherwise a press surfaces the resulting error in HA
+  instead of failing silently.
 
 Not every game answers the query protocol. Player count, map, version, and
 connect address simply stay `unknown` for those instead of erroring.
 
 Device credentials (FTP/MySQL passwords) and access tokens
-(`websocket_token`) returned by the API are never turned into entities.
+(`websocket_token`) returned by the API are never turned into entities. The
+`websocket_token` was investigated as a possible live-update feed instead of
+polling: it appears to be scoped to a per-container console/log stream
+(gated by the game's `has_container_websocket` capability flag), not a
+general live status feed, and its connection protocol isn't publicly
+documented — polling remains the integration's update mechanism.
 
 ## Installation (manual, without HACS)
 
@@ -73,18 +83,14 @@ automatic reload.
   an options flow for changing the selection later
 - `entity.py` – shared `DeviceInfo` builders for the account and per-server
   devices
-- `sensor.py` / `binary_sensor.py` / `image.py` – the entities described
-  above
+- `sensor.py` / `binary_sensor.py` / `image.py` / `button.py` – the
+  entities described above
+- `diagnostics.py` – config entry diagnostics dump (Settings → Devices &
+  services → Nitrado → Download diagnostics), with the API token,
+  `websocket_token`, FTP/MySQL credentials, email, and postal address all
+  redacted
 - `translations/en.json` – entity names; `strings.json` alone is not read
   for entity `translation_key` resolution at runtime, only for config/
   options flow text
 - `brand/` – local brand icon (HA 2026.3.0+ local-brands mechanism, no
   `home-assistant/brands` submission needed)
-
-## Next steps (proposed, not yet implemented)
-
-- `switch`/`button` entities for start/stop/restart (check token scope
-  first)
-- Diagnostics support (`diagnostics.py`) with a redacted token
-- Check whether the `websocket_token` included in the API responses
-  enables a live feed instead of polling
