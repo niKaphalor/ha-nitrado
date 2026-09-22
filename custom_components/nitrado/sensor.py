@@ -4,8 +4,13 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import UnitOfInformation
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
@@ -13,7 +18,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN
+from .const import DOMAIN, MEMORY_SENSOR_GAMES
 from .coordinator import NitradoAccountCoordinator, NitradoCoordinator
 from .entity import account_device_info, service_device_info
 
@@ -30,6 +35,16 @@ async def async_setup_entry(
         entities.append(NitradoStatusSensor(coordinator, service_id))
         entities.append(NitradoContractStatusSensor(coordinator, service_id))
         entities.append(NitradoExpiryDateSensor(coordinator, service_id))
+        entities.append(NitradoPlayerCountSensor(coordinator, service_id))
+        entities.append(NitradoMapSensor(coordinator, service_id))
+        entities.append(NitradoVersionSensor(coordinator, service_id))
+        entities.append(NitradoConnectAddressSensor(coordinator, service_id))
+
+        game_human = (
+            coordinator.data[service_id].get("gameserver", {}).get("game_human") or ""
+        )
+        if any(game in game_human.lower() for game in MEMORY_SENSOR_GAMES):
+            entities.append(NitradoMemorySensor(coordinator, service_id))
     entities.extend(
         [
             NitradoAccountCreditSensor(account_coordinator),
@@ -131,6 +146,150 @@ class NitradoExpiryDateSensor(CoordinatorEntity[NitradoCoordinator], SensorEntit
             return datetime.fromisoformat(suspend_date).replace(tzinfo=dt_util.UTC)
         except ValueError:
             return None
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return service_device_info(
+            self.coordinator.data.get(self._service_id, {}), self._service_id
+        )
+
+
+class NitradoPlayerCountSensor(CoordinatorEntity[NitradoCoordinator], SensorEntity):
+    """Current player count of a Nitrado game server.
+
+    Not every game answers the query protocol, so `query` (and therefore
+    this sensor's value) may legitimately be unavailable.
+    """
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "player_count"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = "players"
+
+    def __init__(self, coordinator: NitradoCoordinator, service_id: int) -> None:
+        super().__init__(coordinator)
+        self._service_id = service_id
+        self._attr_unique_id = f"{service_id}_player_count"
+
+    @property
+    def _query(self) -> dict[str, Any]:
+        gameserver = self.coordinator.data.get(self._service_id, {}).get("gameserver", {})
+        return gameserver.get("query") or {}
+
+    @property
+    def native_value(self) -> int | None:
+        return self._query.get("player_current")
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        attributes = {"max": self._query.get("player_max")}
+        players = self._query.get("players")
+        if players:
+            attributes["players"] = [player.get("name") for player in players]
+        return {key: value for key, value in attributes.items() if value is not None}
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return service_device_info(
+            self.coordinator.data.get(self._service_id, {}), self._service_id
+        )
+
+
+class NitradoMapSensor(CoordinatorEntity[NitradoCoordinator], SensorEntity):
+    """Currently loaded map, if the game answers the query protocol."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "map"
+
+    def __init__(self, coordinator: NitradoCoordinator, service_id: int) -> None:
+        super().__init__(coordinator)
+        self._service_id = service_id
+        self._attr_unique_id = f"{service_id}_map"
+
+    @property
+    def native_value(self) -> str | None:
+        gameserver = self.coordinator.data.get(self._service_id, {}).get("gameserver", {})
+        query = gameserver.get("query") or {}
+        return query.get("map")
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return service_device_info(
+            self.coordinator.data.get(self._service_id, {}), self._service_id
+        )
+
+
+class NitradoVersionSensor(CoordinatorEntity[NitradoCoordinator], SensorEntity):
+    """Game/server version, if the game answers the query protocol."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "version"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: NitradoCoordinator, service_id: int) -> None:
+        super().__init__(coordinator)
+        self._service_id = service_id
+        self._attr_unique_id = f"{service_id}_version"
+
+    @property
+    def native_value(self) -> str | None:
+        gameserver = self.coordinator.data.get(self._service_id, {}).get("gameserver", {})
+        query = gameserver.get("query") or {}
+        return query.get("version")
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return service_device_info(
+            self.coordinator.data.get(self._service_id, {}), self._service_id
+        )
+
+
+class NitradoConnectAddressSensor(CoordinatorEntity[NitradoCoordinator], SensorEntity):
+    """Connect address (IP:port) reported by the query protocol."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "connect_address"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: NitradoCoordinator, service_id: int) -> None:
+        super().__init__(coordinator)
+        self._service_id = service_id
+        self._attr_unique_id = f"{service_id}_connect_address"
+
+    @property
+    def native_value(self) -> str | None:
+        gameserver = self.coordinator.data.get(self._service_id, {}).get("gameserver", {})
+        query = gameserver.get("query") or {}
+        return query.get("connect_ip")
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return service_device_info(
+            self.coordinator.data.get(self._service_id, {}), self._service_id
+        )
+
+
+class NitradoMemorySensor(CoordinatorEntity[NitradoCoordinator], SensorEntity):
+    """Allocated RAM, only added for games where that figure is meaningful.
+
+    See MEMORY_SENSOR_GAMES: currently Minecraft and Hytale.
+    """
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "memory"
+    _attr_device_class = SensorDeviceClass.DATA_SIZE
+    _attr_native_unit_of_measurement = UnitOfInformation.MEGABYTES
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: NitradoCoordinator, service_id: int) -> None:
+        super().__init__(coordinator)
+        self._service_id = service_id
+        self._attr_unique_id = f"{service_id}_memory"
+
+    @property
+    def native_value(self) -> int | None:
+        gameserver = self.coordinator.data.get(self._service_id, {}).get("gameserver", {})
+        return gameserver.get("memory_mb")
 
     @property
     def device_info(self) -> DeviceInfo:

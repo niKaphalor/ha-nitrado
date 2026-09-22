@@ -57,6 +57,21 @@
       },
       "expiry_date": {
         "name": "Expiry date"
+      },
+      "player_count": {
+        "name": "Player count"
+      },
+      "map": {
+        "name": "Map"
+      },
+      "version": {
+        "name": "Version"
+      },
+      "connect_address": {
+        "name": "Connect address"
+      },
+      "memory": {
+        "name": "Memory"
       }
     },
     "image": {
@@ -67,6 +82,9 @@
     "binary_sensor": {
       "auto_extension": {
         "name": "Auto extension"
+      },
+      "must_be_started": {
+        "name": "Must be started"
       }
     }
   }
