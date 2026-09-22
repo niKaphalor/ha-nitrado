@@ -1,0 +1,108 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Nitrado-API-Token",
+        "description": "Erstelle einen Token unter: Nitrado → Mein Konto → Entwicklerportal → Langlebige Token.",
+        "data": {
+          "api_token": "API-Token"
+        }
+      },
+      "services": {
+        "title": "Server auswählen",
+        "description": "Wähle aus, welche deiner Nitrado-Server in Home Assistant angezeigt werden sollen.",
+        "data": {
+          "services": "Server"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Ungültiger API-Token",
+      "cannot_connect": "Verbindung zur Nitrado-API nicht möglich"
+    },
+    "abort": {
+      "already_configured": "Dieses Nitrado-Konto ist bereits eingerichtet"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Sichtbare Server",
+        "description": "Serverauswahl anpassen. Abgewählte Server werden nach dem Speichern entfernt.",
+        "data": {
+          "services": "Server"
+        }
+      }
+    },
+    "abort": {
+      "cannot_connect": "Verbindung zur Nitrado-API nicht möglich"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {
+        "name": "Status"
+      },
+      "game": {
+        "name": "Spiel"
+      },
+      "credit": {
+        "name": "Guthaben"
+      },
+      "user_id": {
+        "name": "Benutzer-ID"
+      },
+      "username": {
+        "name": "Benutzername"
+      },
+      "contract_status": {
+        "name": "Vertragsstatus"
+      },
+      "expiry_date": {
+        "name": "Ablaufdatum"
+      },
+      "player_count": {
+        "name": "Spieleranzahl"
+      },
+      "map": {
+        "name": "Karte"
+      },
+      "version": {
+        "name": "Version"
+      },
+      "connect_address": {
+        "name": "Verbindungsadresse"
+      },
+      "memory": {
+        "name": "Speicher"
+      }
+    },
+    "image": {
+      "avatar": {
+        "name": "Avatar"
+      },
+      "game_icon": {
+        "name": "Spiel-Icon"
+      }
+    },
+    "binary_sensor": {
+      "auto_extension": {
+        "name": "Automatische Verlängerung"
+      },
+      "must_be_started": {
+        "name": "Soll laufen"
+      }
+    },
+    "button": {
+      "start": {
+        "name": "Starten"
+      },
+      "stop": {
+        "name": "Stoppen"
+      },
+      "restart": {
+        "name": "Neustarten"
+      }
+    }
+  }
+}

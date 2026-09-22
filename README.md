@@ -98,8 +98,9 @@ automatic reload.
   services → Nitrado → Download diagnostics), with the API token,
   `websocket_token`, FTP/MySQL credentials, email, and postal address all
   redacted
-- `translations/en.json` – entity names; `strings.json` alone is not read
-  for entity `translation_key` resolution at runtime, only for config/
-  options flow text
+- `translations/en.json` / `translations/de.json` – entity names and
+  config/options flow text; `strings.json` alone is not read for entity
+  `translation_key` resolution at runtime, only for the English config/
+  options flow text as a last-resort fallback
 - `brand/` – local brand icon (HA 2026.3.0+ local-brands mechanism, no
   `home-assistant/brands` submission needed)
