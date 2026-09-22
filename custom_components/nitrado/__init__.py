@@ -14,7 +14,12 @@ from .coordinator import NitradoAccountCoordinator, NitradoCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.IMAGE, Platform.BINARY_SENSOR]
+PLATFORMS: list[Platform] = [
+    Platform.SENSOR,
+    Platform.IMAGE,
+    Platform.BINARY_SENSOR,
+    Platform.BUTTON,
+]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

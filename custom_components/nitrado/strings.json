@@ -86,6 +86,17 @@
       "must_be_started": {
         "name": "Must be started"
       }
+    },
+    "button": {
+      "start": {
+        "name": "Start"
+      },
+      "stop": {
+        "name": "Stop"
+      },
+      "restart": {
+        "name": "Restart"
+      }
     }
   }
 }

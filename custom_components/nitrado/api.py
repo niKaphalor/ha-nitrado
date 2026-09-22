@@ -33,11 +33,11 @@ class NitradoApiClient:
         self._session = session
         self._headers = {"Authorization": f"Bearer {api_token}"}
 
-    async def _request(self, path: str) -> dict[str, Any]:
+    async def _call(self, method: str, path: str) -> dict[str, Any]:
         url = f"{API_BASE_URL}{path}"
         try:
             async with asyncio.timeout(REQUEST_TIMEOUT):
-                response = await self._session.get(url, headers=self._headers)
+                response = await self._session.request(method, url, headers=self._headers)
         except (TimeoutError, aiohttp.ClientError) as err:
             raise NitradoConnectionError(f"Failed to connect to {url}") from err
 
@@ -50,7 +50,16 @@ class NitradoApiClient:
         payload = await response.json()
         if payload.get("status") != "success":
             raise NitradoApiError(f"Nitrado reported an error: {payload}")
+        return payload
+
+    async def _request(self, path: str) -> dict[str, Any]:
+        """GET a data endpoint and return its `data` object."""
+        payload = await self._call("GET", path)
         return payload["data"]
+
+    async def _request_action(self, path: str) -> None:
+        """POST to an action endpoint (start/stop/restart); these have no `data` object."""
+        await self._call("POST", path)
 
     async def async_get_services(self) -> list[dict[str, Any]]:
         """Return all services (servers) in the Nitrado account."""
@@ -71,3 +80,11 @@ class NitradoApiClient:
         """Return account information for the authenticated user."""
         data = await self._request("/user")
         return data.get("user", {})
+
+    async def async_restart_gameserver(self, service_id: int) -> None:
+        """Restart the game server; also starts it if currently stopped."""
+        await self._request_action(f"/services/{service_id}/gameservers/restart")
+
+    async def async_stop_gameserver(self, service_id: int) -> None:
+        """Stop the game server."""
+        await self._request_action(f"/services/{service_id}/gameservers/stop")
