@@ -39,17 +39,35 @@ class NitradoCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
         self._service_ids = service_ids
 
     async def _async_update_data(self) -> dict[int, dict[str, Any]]:
-        """Poll all services. A single failure must not break the rest."""
+        """Poll all services. A single failure must not break the rest.
+
+        Combines the live gameserver status (per-service call) with the
+        contract data (status, expiry, slots, ...) from the bulk /services
+        listing, fetched once per update instead of once per service.
+        """
+        try:
+            services = await self.client.async_get_services()
+        except NitradoAuthError as err:
+            # Token invalid -> HA will automatically show a reauth prompt
+            raise UpdateFailed(str(err)) from err
+        except NitradoApiError as err:
+            _LOGGER.warning("Could not fetch service list: %s", err)
+            services = []
+        contracts = {service["id"]: service for service in services}
+
         results: dict[int, dict[str, Any]] = {}
         for service_id in self._service_ids:
             try:
-                results[service_id] = await self.client.async_get_gameserver(service_id)
+                gameserver = await self.client.async_get_gameserver(service_id)
             except NitradoAuthError as err:
-                # Token invalid -> HA will automatically show a reauth prompt
                 raise UpdateFailed(str(err)) from err
             except NitradoApiError as err:
                 _LOGGER.warning("Could not fetch service %s: %s", service_id, err)
-                results[service_id] = {}
+                gameserver = {}
+            results[service_id] = {
+                "gameserver": gameserver,
+                "contract": contracts.get(service_id, {}),
+            }
         return results
 
 

@@ -1,6 +1,7 @@
 """Sensor platform for the Nitrado integration."""
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
@@ -10,10 +11,11 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .coordinator import NitradoAccountCoordinator, NitradoCoordinator
-from .entity import account_device_info
+from .entity import account_device_info, service_device_info
 
 
 async def async_setup_entry(
@@ -23,9 +25,11 @@ async def async_setup_entry(
     coordinator: NitradoCoordinator = data["coordinator"]
     account_coordinator: NitradoAccountCoordinator = data["account_coordinator"]
 
-    entities: list[SensorEntity] = [
-        NitradoStatusSensor(coordinator, service_id) for service_id in coordinator.data
-    ]
+    entities: list[SensorEntity] = []
+    for service_id in coordinator.data:
+        entities.append(NitradoStatusSensor(coordinator, service_id))
+        entities.append(NitradoContractStatusSensor(coordinator, service_id))
+        entities.append(NitradoExpiryDateSensor(coordinator, service_id))
     entities.extend(
         [
             NitradoAccountCreditSensor(account_coordinator),
@@ -49,7 +53,7 @@ class NitradoStatusSensor(CoordinatorEntity[NitradoCoordinator], SensorEntity):
 
     @property
     def _gameserver(self) -> dict[str, Any]:
-        return self.coordinator.data.get(self._service_id, {})
+        return self.coordinator.data.get(self._service_id, {}).get("gameserver", {})
 
     @property
     def native_value(self) -> str | None:
@@ -57,13 +61,81 @@ class NitradoStatusSensor(CoordinatorEntity[NitradoCoordinator], SensorEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        query = self._gameserver.get("query", {})
-        name = query.get("server_name") or f"Nitrado {self._service_id}"
-        return DeviceInfo(
-            identifiers={(DOMAIN, str(self._service_id))},
-            name=name,
-            manufacturer="Nitrado",
-            model=self._gameserver.get("game_human"),
+        return service_device_info(
+            self.coordinator.data.get(self._service_id, {}), self._service_id
+        )
+
+
+class NitradoContractStatusSensor(CoordinatorEntity[NitradoCoordinator], SensorEntity):
+    """Contract status of a Nitrado service (active/suspended/...).
+
+    Distinct from NitradoStatusSensor, which reflects the game process
+    (online/offline) rather than the subscription itself.
+    """
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "contract_status"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: NitradoCoordinator, service_id: int) -> None:
+        super().__init__(coordinator)
+        self._service_id = service_id
+        self._attr_unique_id = f"{service_id}_contract_status"
+
+    @property
+    def _contract(self) -> dict[str, Any]:
+        return self.coordinator.data.get(self._service_id, {}).get("contract", {})
+
+    @property
+    def native_value(self) -> str | None:
+        return self._contract.get("status")
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        details = self._contract.get("details", {})
+        attributes = {
+            "slots": details.get("slots"),
+            "address": details.get("address"),
+            "comment": self._contract.get("comment"),
+            "delete_date": self._contract.get("delete_date"),
+        }
+        return {key: value for key, value in attributes.items() if value is not None}
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return service_device_info(
+            self.coordinator.data.get(self._service_id, {}), self._service_id
+        )
+
+
+class NitradoExpiryDateSensor(CoordinatorEntity[NitradoCoordinator], SensorEntity):
+    """Date the service will be suspended unless renewed."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "expiry_date"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: NitradoCoordinator, service_id: int) -> None:
+        super().__init__(coordinator)
+        self._service_id = service_id
+        self._attr_unique_id = f"{service_id}_expiry_date"
+
+    @property
+    def native_value(self) -> datetime | None:
+        contract = self.coordinator.data.get(self._service_id, {}).get("contract", {})
+        suspend_date = contract.get("suspend_date")
+        if not suspend_date:
+            return None
+        try:
+            return datetime.fromisoformat(suspend_date).replace(tzinfo=dt_util.UTC)
+        except ValueError:
+            return None
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return service_device_info(
+            self.coordinator.data.get(self._service_id, {}), self._service_id
         )
 
 
