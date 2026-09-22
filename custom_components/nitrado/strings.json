@@ -42,6 +42,20 @@
     "sensor": {
       "status": {
         "name": "Status"
+      },
+      "credit": {
+        "name": "Credit"
+      },
+      "user_id": {
+        "name": "User ID"
+      },
+      "username": {
+        "name": "Username"
+      }
+    },
+    "image": {
+      "avatar": {
+        "name": "Avatar"
       }
     }
   }

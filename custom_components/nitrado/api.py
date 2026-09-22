@@ -66,3 +66,8 @@ class NitradoApiClient:
         """Return contract data (status, expiry date, ...) for a single service."""
         data = await self._request(f"/services/{service_id}")
         return data.get("service", {})
+
+    async def async_get_user(self) -> dict[str, Any]:
+        """Return account information for the authenticated user."""
+        data = await self._request("/user")
+        return data.get("user", {})

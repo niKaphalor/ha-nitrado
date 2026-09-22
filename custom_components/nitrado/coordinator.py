@@ -51,3 +51,24 @@ class NitradoCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
                 _LOGGER.warning("Could not fetch service %s: %s", service_id, err)
                 results[service_id] = {}
         return results
+
+
+class NitradoAccountCoordinator(DataUpdateCoordinator[dict[str, Any]]):
+    """Polls account-level information (credit, avatar, ...) for the Nitrado account."""
+
+    def __init__(self, hass: HomeAssistant, client: NitradoApiClient) -> None:
+        super().__init__(
+            hass,
+            _LOGGER,
+            name="Nitrado Account",
+            update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
+        )
+        self.client = client
+
+    async def _async_update_data(self) -> dict[str, Any]:
+        try:
+            return await self.client.async_get_user()
+        except NitradoAuthError as err:
+            raise UpdateFailed(str(err)) from err
+        except NitradoApiError as err:
+            raise UpdateFailed(str(err)) from err

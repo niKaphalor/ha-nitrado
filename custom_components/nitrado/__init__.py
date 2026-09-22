@@ -10,25 +10,29 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import NitradoApiClient
 from .const import CONF_API_TOKEN, CONF_SERVICES, DOMAIN
-from .coordinator import NitradoCoordinator
+from .coordinator import NitradoAccountCoordinator, NitradoCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-# Foundation release: only the status sensor for now. binary_sensor/switch to follow.
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.IMAGE]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up a config entry: create client + coordinator, forward platforms."""
+    """Set up a config entry: create client + coordinators, forward platforms."""
     session = async_get_clientsession(hass)
     client = NitradoApiClient(session, entry.data[CONF_API_TOKEN])
 
     service_ids = [int(sid) for sid in entry.options.get(CONF_SERVICES, [])]
 
     coordinator = NitradoCoordinator(hass, entry, client, service_ids)
+    account_coordinator = NitradoAccountCoordinator(hass, client)
     await coordinator.async_config_entry_first_refresh()
+    await account_coordinator.async_config_entry_first_refresh()
 
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
+        "coordinator": coordinator,
+        "account_coordinator": account_coordinator,
+    }
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
