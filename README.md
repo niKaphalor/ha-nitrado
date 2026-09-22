@@ -1,8 +1,44 @@
-# Nitrado – Home Assistant Integration (foundation)
+# Nitrado – Home Assistant Integration
 
-Custom integration with UI setup (config flow) instead of YAML. Currently
-shows one status sensor per selected Nitrado service (`online`/`offline`,
-or the raw Nitrado status such as `started`).
+Custom integration with UI setup (config flow) instead of YAML. Adds one
+"Nitrado Account" device plus one device per selected game server, each
+polled by its own `DataUpdateCoordinator` so entities never poll
+individually.
+
+## Entities
+
+**Nitrado Account** (one per configured account)
+
+- **Credit** – account balance, converted from cents to the account
+  currency (e.g. `19.55 EUR`)
+- **User ID**, **Username** – diagnostic sensors
+- **Avatar** – account profile picture
+
+Email address and postal address from the API are intentionally never
+turned into entities.
+
+**Per game server** (one per selected service)
+
+- **Status** – the game process itself (`started`/`stopped`/...)
+- **Must be started** – the admin-configured target state; compare against
+  Status to spot a server that should be running but isn't
+- **Contract status** – the subscription (`active`/`suspended`/...),
+  distinct from the process status above, with `slots`, `address`,
+  `comment`, and `delete_date` as attributes
+- **Expiry date** – when the service will be suspended unless renewed
+- **Auto extension** – whether the subscription renews itself
+- **Player count** – current/max players, with a `players` name list
+  attribute
+- **Map**, **Version**, **Connect address** – from the game's query
+  response
+- **Memory** – allocated RAM in MB, only added for Minecraft/Hytale where
+  that figure is meaningful
+
+Not every game answers the query protocol. Player count, map, version, and
+connect address simply stay `unknown` for those instead of erroring.
+
+Device credentials (FTP/MySQL passwords) and access tokens
+(`websocket_token`) returned by the API are never turned into entities.
 
 ## Installation (manual, without HACS)
 
@@ -15,16 +51,11 @@ or the raw Nitrado status such as `started`).
 
 ## Installation via HACS
 
-1. Push this repository to GitHub (root must contain `hacs.json`,
-   `README.md`, and `custom_components/nitrado/`).
-2. In HA: HACS → three-dot menu → Custom repositories → paste the repo
-   URL → category "Integration" → Add.
-3. Find "Nitrado" in the HACS integration list → Download.
-4. Restart Home Assistant, then add the integration as above.
-
-Before pushing, replace the `YOUR-USERNAME` placeholders in
-`manifest.json` (`documentation`, `issue_tracker`) with your actual
-repository URL.
+1. In HA: HACS → three-dot menu → Custom repositories → paste
+   `https://github.com/niKaphalor/ha-nitrado` → category "Integration" →
+   Add.
+2. Find "Nitrado" in the HACS integration list → Download.
+3. Restart Home Assistant, then add the integration as above.
 
 ## Changing visibility later
 
@@ -35,23 +66,25 @@ automatic reload.
 ## Architecture
 
 - `api.py` – thin async client, one method pair per endpoint
-- `coordinator.py` – one `DataUpdateCoordinator` per account, polls all
-  selected services in one go (respects Nitrado's rate limit)
-- `config_flow.py` – two-step setup flow (token → server selection),
-  plus an options flow for changing the selection later
-- `sensor.py` – one `NitradoStatusSensor` per service, each its own HA
-  device (keeps the device overview clean with multiple servers)
+- `coordinator.py` – `NitradoCoordinator` (one per account, polls all
+  selected services plus the bulk `/services` contract list in one update)
+  and `NitradoAccountCoordinator` (account-level `/user` data)
+- `config_flow.py` – two-step setup flow (token → server selection), plus
+  an options flow for changing the selection later
+- `entity.py` – shared `DeviceInfo` builders for the account and per-server
+  devices
+- `sensor.py` / `binary_sensor.py` / `image.py` – the entities described
+  above
+- `translations/en.json` – entity names; `strings.json` alone is not read
+  for entity `translation_key` resolution at runtime, only for config/
+  options flow text
+- `brand/` – local brand icon (HA 2026.3.0+ local-brands mechanism, no
+  `home-assistant/brands` submission needed)
 
 ## Next steps (proposed, not yet implemented)
 
-- Contract sensors (status, expiry date) via `async_get_service()` in
-  `api.py` – the method already exists, only the coordinator and a
-  second sensor are missing
-- Player count/list as a further sensor or attribute
-- `switch`/`button` entities for start/stop/restart (check token scope)
+- `switch`/`button` entities for start/stop/restart (check token scope
+  first)
 - Diagnostics support (`diagnostics.py`) with a redacted token
 - Check whether the `websocket_token` included in the API responses
   enables a live feed instead of polling
-- A separate `translations/xx.json` file if the integration should
-  support multiple languages later (English currently lives directly
-  in `strings.json`)
