@@ -19,6 +19,17 @@ server** to Home Assistant, set up entirely through the UI (config flow, no
 YAML). Each device is polled by its own `DataUpdateCoordinator`, so entities
 never poll individually.
 
+## Screenshots
+
+<p align="center">
+  <img src="screenshots/dashboard-overview.jpg" alt="Dashboard with the Nitrado Account and a game server side by side" width="800">
+</p>
+
+<p align="center">
+  <img src="screenshots/account-device.jpg" alt="Nitrado Account device page" width="49%">
+  <img src="screenshots/server-device.jpg" alt="Game server device page" width="49%">
+</p>
+
 ## Installation
 
 ### Via HACS (recommended)
