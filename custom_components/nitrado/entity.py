@@ -36,3 +36,28 @@ def service_device_info(service_data: dict[str, Any], service_id: int) -> Device
         manufacturer="Nitrado",
         model=model,
     )
+
+
+# Preference order when picking an icon size from a game catalog entry's
+# `icons` object (largest first).
+_ICON_SIZE_PREFERENCE = ("x256", "x120", "x64", "x32", "x16")
+
+
+def resolve_game_icon(
+    game_icons: dict[str, dict[str, str]], service_data: dict[str, Any]
+) -> str | None:
+    """Look up a service's game icon URL in the games catalog.
+
+    `game_icons` maps a game's `folder_short` to its `icons` object (as
+    returned by GET /gameserver/games); `service_data` is one
+    coordinator.data[service_id] entry.
+    """
+    details = service_data.get("contract", {}).get("details", {})
+    folder_short = details.get("folder_short")
+    if not folder_short:
+        return None
+    icons = game_icons.get(folder_short, {})
+    for size in _ICON_SIZE_PREFERENCE:
+        if icons.get(size):
+            return icons[size]
+    return None

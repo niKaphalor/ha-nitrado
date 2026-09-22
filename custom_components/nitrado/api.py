@@ -81,6 +81,15 @@ class NitradoApiClient:
         data = await self._request("/user")
         return data.get("user", {})
 
+    async def async_get_games_catalog(self) -> list[dict[str, Any]]:
+        """Return Nitrado's full game catalog (id, folder_short, icons, ...).
+
+        Large and effectively static; callers should fetch this once rather
+        than on every poll cycle.
+        """
+        data = await self._request("/gameserver/games")
+        return data.get("games", {}).get("games", [])
+
     async def async_restart_gameserver(self, service_id: int) -> None:
         """Restart the game server; also starts it if currently stopped."""
         await self._request_action(f"/services/{service_id}/gameservers/restart")

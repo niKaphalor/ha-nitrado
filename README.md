@@ -20,6 +20,10 @@ turned into entities.
 **Per game server** (one per selected service)
 
 - **Status** – the game process itself (`started`/`stopped`/...)
+- **Game** – which game is running (e.g. `Minecraft Vanilla`), preferring
+  the gameserver's `game_human` and falling back to the contract's
+  `details.game`. Distinct from the device model, which shows the Nitrado
+  plan/tier (e.g. `Gameserver 16 Slots`), not the game.
 - **Must be started** – the admin-configured target state; compare against
   Status to spot a server that should be running but isn't
 - **Contract status** – the subscription (`active`/`suspended`/...),
@@ -33,6 +37,11 @@ turned into entities.
   response
 - **Memory** – allocated RAM in MB, only added for Minecraft/Hytale where
   that figure is meaningful
+- **Game icon** – the game's icon from Nitrado's game catalog
+  (`GET /gameserver/games`), matched via `folder_short` and picking the
+  largest available size. The catalog is fetched once per setup/reload, not
+  on every poll, since it's a large and effectively static list. The entity
+  is only created when a matching icon is actually found.
 - **Start**, **Stop**, **Restart** buttons – Start and Restart both call
   Nitrado's restart endpoint (there is no separate start endpoint; restart
   also brings up a stopped server). Requires the API token to have server

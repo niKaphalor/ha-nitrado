@@ -33,6 +33,7 @@ async def async_setup_entry(
     entities: list[SensorEntity] = []
     for service_id in coordinator.data:
         entities.append(NitradoStatusSensor(coordinator, service_id))
+        entities.append(NitradoGameSensor(coordinator, service_id))
         entities.append(NitradoContractStatusSensor(coordinator, service_id))
         entities.append(NitradoExpiryDateSensor(coordinator, service_id))
         entities.append(NitradoPlayerCountSensor(coordinator, service_id))
@@ -73,6 +74,36 @@ class NitradoStatusSensor(CoordinatorEntity[NitradoCoordinator], SensorEntity):
     @property
     def native_value(self) -> str | None:
         return self._gameserver.get("status")
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return service_device_info(
+            self.coordinator.data.get(self._service_id, {}), self._service_id
+        )
+
+
+class NitradoGameSensor(CoordinatorEntity[NitradoCoordinator], SensorEntity):
+    """Which game is running on this service (e.g. "Minecraft Vanilla").
+
+    Distinct from the device model, which shows the Nitrado plan/tier
+    (e.g. "Gameserver 16 Slots") rather than the game itself.
+    """
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "game"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: NitradoCoordinator, service_id: int) -> None:
+        super().__init__(coordinator)
+        self._service_id = service_id
+        self._attr_unique_id = f"{service_id}_game"
+
+    @property
+    def native_value(self) -> str | None:
+        data = self.coordinator.data.get(self._service_id, {})
+        gameserver = data.get("gameserver", {})
+        contract = data.get("contract", {})
+        return gameserver.get("game_human") or contract.get("details", {}).get("game")
 
     @property
     def device_info(self) -> DeviceInfo:

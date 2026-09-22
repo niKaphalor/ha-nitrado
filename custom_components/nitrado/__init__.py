@@ -8,7 +8,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import NitradoApiClient
+from .api import NitradoApiClient, NitradoApiError
 from .const import CONF_API_TOKEN, CONF_SERVICES, DOMAIN
 from .coordinator import NitradoAccountCoordinator, NitradoCoordinator
 
@@ -34,9 +34,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await coordinator.async_config_entry_first_refresh()
     await account_coordinator.async_config_entry_first_refresh()
 
+    try:
+        games_catalog = await client.async_get_games_catalog()
+    except NitradoApiError as err:
+        _LOGGER.warning("Could not fetch game icon catalog: %s", err)
+        games_catalog = []
+    game_icons = {
+        game["folder_short"]: game.get("icons", {})
+        for game in games_catalog
+        if game.get("folder_short")
+    }
+
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
         "coordinator": coordinator,
         "account_coordinator": account_coordinator,
+        "game_icons": game_icons,
     }
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
