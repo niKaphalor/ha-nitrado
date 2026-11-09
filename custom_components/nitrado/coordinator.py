@@ -7,6 +7,7 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import NitradoApiClient, NitradoApiError, NitradoAuthError
@@ -32,6 +33,7 @@ class NitradoCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
         super().__init__(
             hass,
             _LOGGER,
+            config_entry=entry,
             name="Nitrado",
             update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
         )
@@ -48,8 +50,8 @@ class NitradoCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
         try:
             services = await self.client.async_get_services()
         except NitradoAuthError as err:
-            # Token invalid -> HA will automatically show a reauth prompt
-            raise UpdateFailed(str(err)) from err
+            # Token invalid -> ConfigEntryAuthFailed makes HA start the reauth flow
+            raise ConfigEntryAuthFailed(str(err)) from err
         except NitradoApiError as err:
             _LOGGER.warning("Could not fetch service list: %s", err)
             services = []
@@ -60,7 +62,7 @@ class NitradoCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
             try:
                 gameserver = await self.client.async_get_gameserver(service_id)
             except NitradoAuthError as err:
-                raise UpdateFailed(str(err)) from err
+                raise ConfigEntryAuthFailed(str(err)) from err
             except NitradoApiError as err:
                 _LOGGER.warning("Could not fetch service %s: %s", service_id, err)
                 gameserver = {}
@@ -74,10 +76,13 @@ class NitradoCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
 class NitradoAccountCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Polls account-level information (credit, avatar, ...) for the Nitrado account."""
 
-    def __init__(self, hass: HomeAssistant, client: NitradoApiClient) -> None:
+    def __init__(
+        self, hass: HomeAssistant, entry: ConfigEntry, client: NitradoApiClient
+    ) -> None:
         super().__init__(
             hass,
             _LOGGER,
+            config_entry=entry,
             name="Nitrado Account",
             update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
         )
@@ -87,6 +92,6 @@ class NitradoAccountCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         try:
             return await self.client.async_get_user()
         except NitradoAuthError as err:
-            raise UpdateFailed(str(err)) from err
+            raise ConfigEntryAuthFailed(str(err)) from err
         except NitradoApiError as err:
             raise UpdateFailed(str(err)) from err

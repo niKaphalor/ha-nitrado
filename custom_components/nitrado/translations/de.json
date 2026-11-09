@@ -8,6 +8,13 @@
           "api_token": "API-Token"
         }
       },
+      "reauth_confirm": {
+        "title": "Nitrado erneut authentifizieren",
+        "description": "Der API-Token ist ungültig, abgelaufen oder wurde widerrufen. Gib einen neuen Token ein: Nitrado → Mein Konto → Entwicklerportal → Langlebige Token.",
+        "data": {
+          "api_token": "API-Token"
+        }
+      },
       "services": {
         "title": "Server auswählen",
         "description": "Wähle aus, welche deiner Nitrado-Server in Home Assistant angezeigt werden sollen.",
@@ -21,7 +28,8 @@
       "cannot_connect": "Verbindung zur Nitrado-API nicht möglich"
     },
     "abort": {
-      "already_configured": "Dieses Nitrado-Konto ist bereits eingerichtet"
+      "already_configured": "Dieses Nitrado-Konto ist bereits eingerichtet",
+      "reauth_successful": "Die erneute Authentifizierung war erfolgreich"
     }
   },
   "options": {
