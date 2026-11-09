@@ -30,7 +30,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     service_ids = [int(sid) for sid in entry.options.get(CONF_SERVICES, [])]
 
     coordinator = NitradoCoordinator(hass, entry, client, service_ids)
-    account_coordinator = NitradoAccountCoordinator(hass, client)
+    account_coordinator = NitradoAccountCoordinator(hass, entry, client)
     await coordinator.async_config_entry_first_refresh()
     await account_coordinator.async_config_entry_first_refresh()
 

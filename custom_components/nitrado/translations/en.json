@@ -8,6 +8,13 @@
           "api_token": "API token"
         }
       },
+      "reauth_confirm": {
+        "title": "Re-authenticate Nitrado",
+        "description": "The API token is invalid, expired or was revoked. Enter a new token from: Nitrado → my account → Developer Portal → Long-life tokens.",
+        "data": {
+          "api_token": "API token"
+        }
+      },
       "services": {
         "title": "Select servers",
         "description": "Choose which of your Nitrado servers should show up in Home Assistant.",
@@ -21,7 +28,8 @@
       "cannot_connect": "Could not connect to the Nitrado API"
     },
     "abort": {
-      "already_configured": "This Nitrado account is already configured"
+      "already_configured": "This Nitrado account is already configured",
+      "reauth_successful": "Re-authentication was successful"
     }
   },
   "options": {

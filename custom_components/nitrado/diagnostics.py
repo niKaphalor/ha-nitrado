@@ -10,15 +10,20 @@ from homeassistant.core import HomeAssistant
 from .const import CONF_API_TOKEN, DOMAIN
 from .coordinator import NitradoAccountCoordinator, NitradoCoordinator
 
-# Access tokens, device credentials (FTP/MySQL passwords), and the account's
-# email/postal address must never end up in a diagnostics dump that gets
-# attached to a public GitHub issue.
+# Access tokens, device credentials (FTP/MySQL passwords), the account's
+# email/postal address and owner identifiers (account username/user_id, the
+# server login name in the gameserver payload) must never end up in a
+# diagnostics dump that gets attached to a public GitHub issue.
+# async_redact_data matches keys at any nesting depth, so these also cover the
+# per-service "gameserver" and "contract" sections.
 TO_REDACT = {
     CONF_API_TOKEN,
     "websocket_token",
     "credentials",
     "email",
     "profile",
+    "username",
+    "user_id",
 }
 
 
